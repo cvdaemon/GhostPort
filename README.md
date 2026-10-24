@@ -29,43 +29,31 @@ Ghostport is a user-space replacement for Xshell + Xftp: saved server profiles, 
 - **Idle close** — SSH/SFTP tabs close after 45 minutes with no activity (configurable)
 - **Bounded terminal** — rolling scrollback so `docker logs` cannot fill RAM
 
-## Install (Windows)
+## Run it
 
-Redistributable (no admin):
-
-`dist/GhostportSetup/GhostportSetup.exe`
-
-1. Double-click **GhostportSetup.exe**
-2. Next → pick a folder (user AppData, or another drive) → Install → Finish
-3. Open Ghostport from the Desktop or Start menu shortcut
-
-Portable folder (copy as-is):
-
-`dist/Ghostport/` — run `Ghostport.exe` from that directory. Keep `_internal` and `portable.flag` next to the exe.
-
-## Run from source
-
-From the **repository root** (not `ghostport/`):
+Clone this repo. From the **repository root** (the folder that contains `pyproject.toml`, not the inner `ghostport` package):
 
 ```powershell
 python -m pip install -r requirements.txt
 python -m ghostport
 ```
 
-`python -m ghostport --setup` opens the same installer wizard without building an exe.
+Python 3.10+ on Windows. `python -m ghostport --setup` opens the per-user installer wizard.
 
-## Build the Windows packages
+## Build a Windows exe
+
+The GitHub tree is source only. After a local build, PyInstaller writes packages under `dist/` on your machine (that folder is gitignored):
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 ```
 
-Produces:
-
-| Path | What it is |
+| Local path | What it is |
 | --- | --- |
-| `dist/Ghostport/Ghostport.exe` | Portable app |
-| `dist/GhostportSetup/GhostportSetup.exe` | Per-user installer |
+| `dist/Ghostport/Ghostport.exe` | Portable app (keep `_internal` and `portable.flag` beside it) |
+| `dist/GhostportSetup/GhostportSetup.exe` | Per-user installer, no admin |
+
+Installer flow: double-click the setup exe → Next → pick a user folder or another drive → Install → Finish. Then open Ghostport from the Desktop or Start menu shortcut.
 
 ## Development
 
