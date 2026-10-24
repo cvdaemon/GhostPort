@@ -1,0 +1,5 @@
+PySide6>=6.6.0,<7
+paramiko>=3.4.0,<4
+pyte>=0.8.2,<0.9
+wcwidth>=0.2.13
+keyring>=25.0.0,<26

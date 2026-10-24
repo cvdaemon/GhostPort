@@ -1,0 +1,216 @@
+/* Ghostport dark theme. Tokens: $bg $bg_panel $bg_elevated $border $text
+   $text_muted $accent $danger $warn. Substituted by string.Template in
+   ui/theme.py. Do not use {braces} for tokens — those are QSS blocks. */
+
+QMainWindow, QDialog, QWidget {
+    background-color: $bg;
+    color: $text;
+    font-family: "Segoe UI";
+    font-size: 13px;
+}
+
+QTabWidget::pane {
+    border: 1px solid $border;
+    background: $bg;
+    top: -1px;
+}
+
+QTabBar::tab {
+    background: $bg;
+    color: $text_muted;
+    padding: 8px 16px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    min-width: 72px;
+}
+
+QTabBar::tab:selected {
+    color: $text;
+    background: $bg_panel;
+    border-bottom: 2px solid $accent;
+}
+
+QTabBar::tab:hover:!selected {
+    color: $text;
+    background: $bg_elevated;
+}
+
+QLineEdit, QSpinBox, QComboBox, QPlainTextEdit, QTextEdit {
+    background: $bg_elevated;
+    color: $text;
+    border: 1px solid $border;
+    border-radius: 4px;
+    padding: 6px 8px;
+    selection-background-color: $accent;
+}
+
+QLineEdit:focus, QSpinBox:focus, QComboBox:focus, QPlainTextEdit:focus {
+    border: 1px solid $accent;
+}
+
+QComboBox QAbstractItemView {
+    background: $bg_elevated;
+    color: $text;
+    selection-background-color: $accent;
+    border: 1px solid $border;
+}
+
+QPushButton {
+    background: $bg_elevated;
+    color: $text;
+    border: 1px solid $border;
+    border-radius: 4px;
+    padding: 6px 14px;
+    min-height: 22px;
+}
+
+QPushButton:hover {
+    border-color: $accent;
+}
+
+QPushButton:pressed {
+    background: $bg_panel;
+}
+
+QPushButton:disabled {
+    color: $text_muted;
+    border-color: $border;
+}
+
+QPushButton#primaryButton {
+    background: $accent;
+    color: #0b0b0b;
+    border: 1px solid $accent;
+    font-weight: 600;
+}
+
+QPushButton#primaryButton:hover {
+    background: #48b0a8;
+}
+
+QPushButton#dangerButton {
+    color: $danger;
+    border-color: $danger;
+}
+
+QScrollArea {
+    border: none;
+    background: $bg;
+}
+
+QScrollBar:vertical {
+    background: $bg;
+    width: 10px;
+    margin: 0;
+}
+
+QScrollBar::handle:vertical {
+    background: $border;
+    min-height: 24px;
+    border-radius: 4px;
+}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+    height: 0;
+}
+
+QMenu {
+    background: $bg_elevated;
+    color: $text;
+    border: 1px solid $border;
+    padding: 4px;
+}
+
+QMenu::item {
+    padding: 6px 18px;
+    border-radius: 3px;
+}
+
+QMenu::item:selected {
+    background: $bg_panel;
+}
+
+QMenu::item:disabled {
+    color: $text_muted;
+}
+
+QMenu::separator {
+    height: 1px;
+    background: $border;
+    margin: 4px 8px;
+}
+
+QCheckBox, QRadioButton, QLabel {
+    color: $text;
+    background: transparent;
+}
+
+QGroupBox {
+    color: $text_muted;
+    border: 1px solid $border;
+    border-radius: 6px;
+    margin-top: 12px;
+    padding: 12px 8px 8px 8px;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 10px;
+    padding: 0 4px;
+}
+
+QListWidget {
+    background: $bg;
+    border: none;
+    outline: none;
+    color: $text;
+}
+
+QListWidget::item {
+    padding: 0;
+    margin: 0 0 8px 0;
+}
+
+QMessageBox {
+    background: $bg_panel;
+}
+
+QToolTip {
+    background: $bg_elevated;
+    color: $text;
+    border: 1px solid $border;
+    padding: 4px 8px;
+}
+
+QHeaderView::section {
+    background: $bg_panel;
+    color: $text_muted;
+    border: none;
+    padding: 6px;
+}
+
+QProgressBar {
+    background: $bg_elevated;
+    border: 1px solid $border;
+    border-radius: 3px;
+    text-align: center;
+    color: $text;
+    min-height: 16px;
+}
+
+QProgressBar::chunk {
+    background: $accent;
+}
+
+QSplitter::handle {
+    background: $border;
+}
+
+QSplitter::handle:hover {
+    background: $accent;
+}
+
+QPushButton#chromeButton {
+    min-width: 72px;
+    padding: 5px 12px;
+}

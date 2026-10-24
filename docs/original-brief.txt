@@ -1,0 +1,1301 @@
+The primary objective is:
+A fast, dark, portable Windows SSH client where saved server profiles make connecting to my 10–15 servers essentially one click, with an integrated SFTP client that can be opened from an active SSH session without asking for credentials again.Before writing code, inspect the requirements carefully and identify any technical ambiguities. Make reasonable engineering decisions without repeatedly asking me for confirmation. When a feature is difficult, prefer an established library/component over implementing the protocol or subsystem from scratch.
+
+FULL BUILD PROMPT — GHOSTPORT
+
+I want you to build a Windows desktop SSH + SFTP client called Ghostport, written entirely in Python.
+
+The goal is to create a lightweight personal replacement for the combination of Xshell + Xftp, optimized for managing approximately 10–15 Linux/VPS servers.
+
+I currently use Xshell/Xftp, but I don't have Windows administrator privileges on my work laptop, and the applications frequently require updates that need IT approval. Ghostport should therefore be designed as a portable, user-space application that does not require administrator privileges to run or install.
+
+The application should prioritize SSH as the primary experience, with SFTP integrated as a secondary but tightly connected feature.
+
+Use PyQt6/PySide6 rather than Tkinter if possible because I want a modern desktop UI, tabs, context menus, split panes, icons, keyboard shortcuts, etc. If there is a strong technical reason to use Tkinter, explain it first, but PyQt/PySide is preferred.
+
+1. CORE CONCEPT
+
+Ghostport has two distinct entities:
+
+Entity 1 — SSH
+
+This is the primary application experience.
+
+SSH sessions appear as tabs in the main Ghostport window.
+
+Example:
+
+┌──────────────────────────────────────────────────────────────┐
+│ Ghostport                                                    │
+├──────────────────────────────────────────────────────────────┤
+│ +  PROD-API   × │ QA_SERVER   × │ DEV_SERVER   × │    +     │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│                                                              │
+│                     SSH TERMINAL                             │
+│                                                              │
+│  simtra@QA_Server:~$ docker ps                               │
+│  ...                                                         │
+│                                                              │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+Entity 2 — SFTP
+
+SFTP is a separate file-transfer application/window, but it is linked to SSH server profiles.
+
+If I already have an SSH connection open to:
+
+QA_SERVER
+15.206.101.4
+username: simtra
+port: 22
+
+I should be able to click:
+
+Open SFTP
+
+and Ghostport should open the SFTP client for that same server without asking me for credentials again.
+
+The SSH and SFTP interfaces should remain separate.
+
+2. IMPORTANT UX REQUIREMENT
+
+SSH is the primary application.
+
+When I open Ghostport, I should immediately see my Favorites / Saved Servers.
+
+Something like:
+
+┌─────────────────────────────────────────────────────────────┐
+│ Ghostport                                      ⚙ Settings   │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│  FAVORITES                              [+ Add Server]      │
+│                                                             │
+│  🖥 QA_SERVER                                               │
+│     simtra@15.206.101.4                                    │
+│                                                             │
+│  🖥 PROD_API                                                │
+│     simtra@10.20.30.40                                     │
+│                                                             │
+│  🖥 DEV_SERVER                                              │
+│     abi@10.20.30.41                                        │
+│                                                             │
+│  🖥 NVR                                                     │
+│     simtra@10.20.30.50                                     │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+Double-clicking a favorite should immediately open the SSH connection.
+
+No need to repeatedly enter:
+
+hostname
+username
+port
+authentication method
+password
+
+unless the saved profile requires it.
+
+3. SERVER PROFILE SYSTEM
+
+Ghostport needs a proper saved-server/profile system.
+
+Each server profile should support:
+
+General
+Profile name
+Host/IP
+Port
+Username
+Description/notes
+Favorite/star status
+
+Example:
+
+Name: QA_SERVER
+Host: 15.206.101.4
+Port: 22
+Username: simtra
+Authentication
+
+Support at minimum:
+
+Password
+SSH private key
+.pem files
+OpenSSH private keys
+Passphrase-protected private keys if technically possible
+SSH agent if practical
+
+Authentication selector:
+
+Authentication:
+
+○ Password
+○ Private Key
+○ SSH Agent
+
+If Private Key:
+
+Private Key:
+[C:\Users\Abi\.ssh\server.pem] [Browse]
+
+Passphrase:
+[••••••••••]
+
+If password:
+
+Password:
+[••••••••••]
+4. CREDENTIAL SECURITY
+
+DO NOT store passwords as plaintext JSON.
+
+Use Windows Credential Manager / Windows DPAPI or another appropriate Windows-native secure credential storage mechanism.
+
+Server configuration can be stored locally in something like:
+
+%APPDATA%\Ghostport\
+
+or, for portable mode:
+
+Ghostport\
+├── Ghostport.exe
+├── config\
+├── sessions\
+├── logs\
+└── keys\
+
+But sensitive passwords must not simply be written into:
+
+servers.json
+
+as plaintext.
+
+Private keys should also not be copied unnecessarily.
+
+Ideally Ghostport should reference existing .pem / SSH key files.
+
+5. SSH TERMINAL
+
+The SSH terminal must behave like a real terminal, not a simple QTextEdit.
+
+It must support:
+
+Interactive shell
+ANSI escape sequences
+Colors
+Cursor movement
+Backspace
+Arrow keys
+Ctrl+C
+Ctrl+D
+Ctrl+Z
+Tab completion
+Unicode
+Terminal resizing
+Vim
+Nano
+Less
+Htop
+Top
+Docker interactive sessions
+Interactive Python
+Shell history
+Mouse interaction where supported
+
+Use a proper SSH PTY.
+
+Do not implement SSH protocol manually.
+
+Use an established Python SSH library such as:
+
+Paramiko
+
+or another mature SSH library.
+
+The terminal should request a PTY and properly handle:
+
+stdin
+stdout
+stderr
+terminal resize
+6. SSH TABS
+
+SSH must support multiple tabs.
+
+Example:
+
+┌──────────────────────────────────────────────────────────────┐
+│ QA_SERVER × │ PROD_API × │ DEV_SERVER × │ NVR × │ +        │
+├──────────────────────────────────────────────────────────────┤
+│                                                              │
+│                       TERMINAL                              │
+│                                                              │
+└──────────────────────────────────────────────────────────────┘
+
+Each tab represents an independent SSH session.
+
+Requirements:
+
+New SSH tab
+Close tab
+Double-click favorite → new SSH tab
+Ctrl+T → new tab if appropriate
+Ctrl+W → close current tab
+Tab switching
+Active tab indication
+Connection status
+Reconnect
+Disconnect
+Duplicate tab
+7. RIGHT-CLICK SSH TAB
+
+Right-clicking an SSH tab should show:
+
+Reconnect
+Disconnect
+Duplicate Tab
+Open SFTP
+Open SFTP in New Window
+Rename Tab
+Close Tab
+Close Other Tabs
+Close Tabs to Right
+
+Most importantly:
+
+Open SFTP
+
+If the SSH tab is already authenticated, clicking:
+
+Open SFTP
+
+must open the SFTP client for that same server without requiring another login.
+
+The credentials should come from the existing server profile/session.
+
+Do not unnecessarily ask for the password again.
+
+If the existing SSH connection can safely be reused for SFTP, reuse it.
+
+Otherwise create a new SFTP connection using the same already-authenticated profile/credential source.
+
+8. SSH ↔ SFTP RELATIONSHIP
+
+Think of it like:
+
+                    SERVER PROFILE
+                          │
+              ┌───────────┴───────────┐
+              │                       │
+              ▼                       ▼
+        SSH SESSION              SFTP SESSION
+              │                       │
+              ▼                       ▼
+        Terminal tab             File Explorer
+
+SSH and SFTP are separate UI entities.
+
+But both originate from the same saved server profile.
+
+Example:
+
+QA_SERVER
+│
+├── SSH
+│    ├── Tab 1
+│    ├── Tab 2
+│    └── Tab 3
+│
+└── SFTP
+     ├── Tab 1
+     └── Tab 2
+9. SFTP WINDOW
+
+SFTP should open in a separate window, not replace the SSH terminal.
+
+The SFTP interface should look broadly like classic Xftp / WinSCP / Bitvise file transfer interfaces.
+
+Dark mode is mandatory/preferred.
+
+Example:
+
+┌──────────────────────────────────────────────────────────────────┐
+│ Ghostport SFTP — QA_SERVER                             _ □ ×     │
+├──────────────────────────────────────────────────────────────────┤
+│ Local: C:\Users\Abi\Downloads                                  │
+│ Remote: /home/simtra                                             │
+├────────────────────────────┬─────────────────────────────────────┤
+│ LOCAL                      │ REMOTE — QA_SERVER                  │
+│                            │                                     │
+│ 📁 Documents               │ 📁 workspace                        │
+│ 📁 Downloads               │ 📁 logs                             │
+│ 📁 Pictures                │ 📁 scripts                          │
+│ 📄 test.csv                │ 📄 docker-compose.yml                │
+│ 📄 video.mp4               │ 📄 config.json                       │
+│                            │                                     │
+├────────────────────────────┴─────────────────────────────────────┤
+│ Transfer queue                                                  │
+│ test.csv → /home/simtra/test.csv                 100%           │
+└──────────────────────────────────────────────────────────────────┘
+10. SFTP TWO-PANE FILE EXPLORER
+
+Left:
+
+LOCAL
+
+Windows filesystem.
+
+Right:
+
+REMOTE
+
+Linux VPS filesystem.
+
+Both should support:
+
+Directory navigation
+Double-click folders
+Back
+Forward
+Up
+Refresh
+Address/path bar
+File selection
+Multi-selection
+Sorting
+Name
+Size
+Type
+Modified date
+File permissions where applicable
+Hidden files toggle
+
+Remote Linux paths should work correctly:
+
+/
+ /home
+ /home/simtra
+ /var
+ /var/log
+ /opt
+ /etc
+11. SFTP OPERATIONS
+
+Support:
+
+Upload
+
+Local → VPS
+
+Right click
+    ↓
+Upload
+Download
+
+VPS → Local
+
+Right click
+    ↓
+Download
+
+Also:
+
+Delete
+Rename
+Create folder
+Refresh
+Copy path
+Properties
+Open local folder
+Open terminal here if practical
+File overwrite confirmation
+Multiple file transfers
+12. SFTP RIGHT-CLICK MENU
+
+Right-clicking a remote file:
+
+Open
+Download
+Download As...
+Rename
+Delete
+Copy Path
+Properties
+Refresh
+
+Right-clicking a remote folder:
+
+Open
+Download Folder
+Rename
+Delete
+Copy Path
+Open Terminal Here
+Properties
+
+Right-clicking blank space:
+
+New Folder
+Upload
+Refresh
+Paste
+13. SFTP TABS
+
+The SFTP window itself must support tabs.
+
+Example:
+
+┌───────────────────────────────────────────────────────────────┐
+│ QA_SERVER × │ PROD_API × │ DEV_SERVER × │ +                  │
+├───────────────────────────────────────────────────────────────┤
+│                                                               │
+│ LOCAL                          REMOTE                         │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
+
+Each SFTP tab represents a server/session.
+
+Right-click tab:
+
+Duplicate Tab
+Reconnect
+Disconnect
+Rename
+Close
+Close Other Tabs
+Duplicate Tab
+
+If I right-click:
+
+QA_SERVER
+
+and choose:
+
+Duplicate Tab
+
+open another SFTP tab connected to the same server.
+
+Do not ask me to enter credentials again.
+
+14. DRAG AND DROP
+
+Implement drag-and-drop if practical.
+
+Examples:
+
+Windows Explorer
+      │
+      │ drag file
+      ▼
+Ghostport LOCAL pane
+      │
+      ▼
+Remote pane
+      │
+      ▼
+Upload
+
+And reverse:
+
+Remote VPS
+    │
+    │ drag
+    ▼
+Local Windows pane
+    │
+    ▼
+Download
+
+Show transfer progress.
+
+15. TRANSFER QUEUE
+
+SFTP should have a transfer queue.
+
+Example:
+
+TRANSFER QUEUE
+
+✓ model.onnx                 100%
+✓ config.json                100%
+↓ video.mp4                   73%
+⏳ logs.zip                    Waiting
+
+Show:
+
+filename
+direction
+progress
+speed
+ETA
+status
+cancel
+retry
+16. DARK MODE
+
+This is a major design requirement.
+
+Ghostport should be dark-first.
+
+Do not make it look like an old Windows application.
+
+Use a modern dark UI inspired by:
+
+modern terminals
+VS Code
+Windows Terminal
+Xshell dark theme
+Bitvise
+modern developer tools
+
+Use:
+
+dark charcoal background
+slightly lighter panels
+subtle borders
+readable text
+restrained accent color
+clear active tab
+good spacing
+monospaced terminal font
+
+Avoid excessive gradients, giant buttons, unnecessary animations, etc.
+
+The aesthetic should be:
+
+minimal + technical + professional + slightly cyberpunk without becoming cheesy.
+
+The name is:
+
+Ghostport
+
+Logo can be a very simple ghost/port/network-inspired icon.
+
+17. HOME SCREEN
+
+When Ghostport launches:
+
+┌─────────────────────────────────────────────────────────────┐
+│ 👻 Ghostport                               + Add Server     │
+├─────────────────────────────────────────────────────────────┤
+│                                                             │
+│ FAVORITES                                                   │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ★ QA_SERVER                                             │ │
+│ │   simtra@15.206.101.4:22                                │ │
+│ │   ● Saved credentials                                   │ │
+│ │                                                         │ │
+│ │   [SSH] [SFTP]                                          │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+│ ┌─────────────────────────────────────────────────────────┐ │
+│ │ ★ PROD_API                                              │ │
+│ │   simtra@10.20.30.40:22                                 │ │
+│ │                                                         │ │
+│ │   [SSH] [SFTP]                                          │ │
+│ └─────────────────────────────────────────────────────────┘ │
+│                                                             │
+└─────────────────────────────────────────────────────────────┘
+
+Double-click:
+
+Server card
+    ↓
+SSH tab
+
+Buttons:
+
+[SSH] [SFTP]
+
+should directly launch the respective interface.
+
+18. ADD SERVER
+
+The Add Server dialog should be simple but comprehensive.
+
+ADD SERVER
+
+Name
+[ QA_SERVER                         ]
+
+Host
+[ 15.206.101.4                     ]
+
+Port
+[ 22 ]
+
+Username
+[ simtra                           ]
+
+Authentication
+[ Password ▼ ]
+
+Password
+[ •••••••••••                      ]
+
+[ ] Favorite
+
+Advanced
+────────────────────────────────
+
+Keep alive
+[ ✓ ]
+
+Connection timeout
+[ 10 sec ]
+
+Terminal type
+[ xterm-256color ▼ ]
+
+Initial directory
+[ /home/simtra ]
+
+              [ Cancel ] [ Save ]
+
+If authentication is Private Key:
+
+Private key
+[C:\Users\Abi\.ssh\server.pem] [Browse]
+
+Passphrase
+[••••••••••]
+19. CONNECTION STATUS
+
+Every SSH/SFTP session should clearly show:
+
+● Connected
+
+or:
+
+● Connecting...
+
+or:
+
+● Disconnected
+
+Use a subtle status indicator.
+
+If connection drops:
+
+Connection lost.
+
+[Reconnect]
+
+Do not silently fail.
+
+20. RECONNECT
+
+If an SSH session disconnects:
+
+┌──────────────────────────────────────┐
+│ Connection lost                      │
+│                                      │
+│ QA_SERVER                             │
+│                                      │
+│ [Reconnect]     [Close Session]      │
+└──────────────────────────────────────┘
+
+Same for SFTP.
+
+21. SERVER MANAGEMENT
+
+Right-click a favorite:
+
+Connect SSH
+Open SFTP
+Edit
+Duplicate
+Remove from Favorites
+Delete Profile
+
+Allow drag-and-drop reordering of favorites if practical.
+
+22. SEARCH
+
+Add a server search field on the home screen.
+
+If I have 15–30 servers eventually:
+
+Search servers...
+
+[prod]
+
+should show:
+
+PROD_API
+PROD_NVR
+PROD_DATABASE
+23. KEYBOARD SHORTCUTS
+
+Implement sensible shortcuts.
+
+At minimum:
+
+Ctrl+T          New SSH tab
+Ctrl+W          Close tab
+Ctrl+Tab        Next tab
+Ctrl+Shift+Tab  Previous tab
+Ctrl+Shift+R    Reconnect
+Ctrl+Shift+S    Open SFTP
+Ctrl+F          Search where appropriate
+
+Don't conflict unnecessarily with terminal applications.
+
+24. TERMINAL CONTEXT MENU
+
+Right-click inside terminal:
+
+Copy
+Paste
+Select All
+Clear
+Find
+Reconnect
+Disconnect
+Open SFTP
+
+Support normal terminal copy/paste behavior.
+
+25. SETTINGS
+
+Settings should include:
+
+Appearance
+Theme:
+● Dark
+○ Light
+○ System
+
+Dark should be the default.
+
+Terminal
+Font
+Font size
+Cursor style
+Scrollback size
+Copy on select
+Paste warning
+Terminal type
+Connections
+Connection timeout
+Keep-alive interval
+Reconnect behavior
+SFTP
+Default local directory
+Show hidden files
+Confirm deletes
+Confirm overwrites
+Transfer concurrency
+26. LOGGING
+
+Application logs should be stored locally.
+
+Example:
+
+logs/
+    ghostport.log
+
+Log:
+
+connection attempts
+connection failures
+SFTP transfer failures
+application errors
+
+DO NOT log passwords, private keys, passphrases, or other secrets.
+
+27. PORTABLE WINDOWS APPLICATION
+
+This is extremely important.
+
+Ghostport should be able to run without administrator privileges.
+
+Prefer a portable build:
+
+Ghostport.exe
+
+or:
+
+Ghostport/
+    Ghostport.exe
+    config/
+    logs/
+
+It should not require:
+
+Administrator privileges
+Windows service installation
+writing to Program Files
+system-wide registry modifications
+
+Build using something appropriate such as:
+
+PyInstaller
+
+and provide instructions for generating:
+
+Ghostport.exe
+
+Prefer a single-folder portable build initially rather than an installer.
+
+28. TECHNOLOGY
+
+Preferred stack:
+
+Python 3.x
+PyQt6 or PySide6
+Paramiko
+PyInstaller
+
+Potential additional libraries are acceptable if they solve a real problem.
+
+For terminal emulation, use an existing appropriate terminal-emulator component/library if available rather than attempting to implement ANSI terminal emulation from scratch.
+
+For Windows credential storage, use an appropriate secure Windows credential API/library.
+
+Do not reinvent cryptography.
+
+Do not implement SSH manually.
+
+Do not implement SFTP protocol manually.
+
+29. THREADING / ASYNC
+
+The GUI must NEVER freeze while:
+
+connecting to SSH
+connecting to SFTP
+uploading
+downloading
+listing directories
+reconnecting
+reading terminal output
+
+Use appropriate:
+
+QThread
+worker objects
+signals/slots
+asyncio where appropriate
+
+The UI must remain responsive during network operations.
+
+30. ARCHITECTURE
+
+Do not put the entire application in one Python file.
+
+Use a clean architecture.
+
+Something along these lines:
+
+ghostport/
+│
+├── main.py
+│
+├── ui/
+│   ├── main_window.py
+│   ├── home_page.py
+│   ├── ssh_tab.py
+│   ├── sftp_window.py
+│   ├── sftp_tab.py
+│   ├── server_dialog.py
+│   ├── settings_dialog.py
+│   └── widgets/
+│
+├── ssh/
+│   ├── connection.py
+│   ├── session.py
+│   └── terminal.py
+│
+├── sftp/
+│   ├── connection.py
+│   ├── session.py
+│   ├── file_model.py
+│   └── transfer_manager.py
+│
+├── profiles/
+│   ├── manager.py
+│   └── models.py
+│
+├── security/
+│   └── credentials.py
+│
+├── config/
+│   └── settings.py
+│
+├── resources/
+│   ├── icons/
+│   └── styles/
+│
+└── utils/
+
+Keep networking/business logic separate from UI.
+
+31. SERVER PROFILE DATA MODEL
+
+Create a proper server profile object.
+
+Example conceptual structure:
+
+ServerProfile(
+    name="QA_SERVER",
+    host="15.206.101.4",
+    port=22,
+    username="simtra",
+    auth_method="password",
+    private_key_path=None,
+    favorite=True,
+    initial_directory="/home/simtra"
+)
+
+Do not hard-code server information.
+
+32. IMPORTANT: CONNECTION REUSE
+
+If I have:
+
+SSH → QA_SERVER
+
+already authenticated, then:
+
+Open SFTP
+
+must know:
+
+QA_SERVER
+host
+port
+username
+authentication method
+credential source
+
+automatically.
+
+The user experience should be:
+
+SSH tab
+     ↓
+Open SFTP
+     ↓
+SFTP opens
+     ↓
+Connected
+
+NOT:
+
+Open SFTP
+     ↓
+Enter host
+     ↓
+Enter username
+     ↓
+Enter password
+     ↓
+Connect
+
+This is one of the core reasons I'm building Ghostport.
+
+33. Xshell / Bitvise INSPIRED FEATURES
+
+Study the general workflow and feature categories of established SSH clients such as Xshell and Bitvise SSH Client.
+
+I want Ghostport to eventually cover useful functionality commonly found in those clients, including:
+
+Saved sessions
+Session favorites
+SSH tabs
+Reconnect
+SSH terminal
+SFTP integration
+File transfer
+Multiple sessions
+Authentication profiles
+Private-key authentication
+Password authentication
+Keep-alive
+Terminal configuration
+Session settings
+Copy/paste
+File permissions
+Remote file operations
+Port forwarding as a future feature
+SSH tunneling as a future feature
+Jump hosts as a future feature
+Command snippets as a future feature
+
+Do not attempt to implement every advanced feature in V1.
+
+Build a strong foundation first.
+
+34. V1 PRIORITY
+
+The first working version MUST prioritize:
+
+Priority 1
+
+SSH:
+
+Saved servers
+Favorites
+Password authentication
+PEM/private-key authentication
+SSH tabs
+Real interactive terminal
+Reconnect
+Duplicate tab
+Priority 2
+
+SFTP:
+
+Separate window
+Local pane
+Remote pane
+Directory navigation
+Upload
+Download
+Delete
+Rename
+Create directory
+Refresh
+SFTP tabs
+Duplicate tab
+Reuse saved credentials
+Priority 3
+
+Polish:
+
+Dark theme
+Context menus
+Keyboard shortcuts
+Connection indicators
+Transfer progress
+Secure credential storage
+
+Everything else can come later.
+
+35. DO NOT OVERENGINEER V1
+
+Do NOT start by implementing:
+
+port forwarding
+SOCKS proxies
+jump hosts
+cloud synchronization
+team sharing
+account systems
+remote desktop
+terminal recording
+scripting engines
+plugin systems
+telemetry
+auto-updaters
+
+I specifically want a small personal tool that solves my workflow problem.
+
+Build the core correctly first.
+
+36. DEVELOPMENT APPROACH
+
+Do this incrementally.
+
+Do NOT dump 5,000 lines of code into one response.
+
+Build in stages:
+
+Stage 1
+
+Create the application shell:
+
+Ghostport
+├── Home
+├── Favorites
+├── Add Server
+└── Settings
+
+Implement server profiles.
+
+Stage 2
+
+Implement SSH:
+
+Favorite
+   ↓
+SSH tab
+   ↓
+Interactive terminal
+Stage 3
+
+Implement SSH tab management:
+
+New tab
+Duplicate
+Close
+Reconnect
+Open SFTP
+Stage 4
+
+Implement SFTP window:
+
+Local │ Remote
+Stage 5
+
+Implement transfers and context menus.
+
+Stage 6
+
+Implement security/credential storage.
+
+Stage 7
+
+Package as portable Windows executable.
+
+At every stage, keep the application runnable.
+
+37. CODE QUALITY
+
+I am comfortable with Python, Linux, Docker, networking and development, so don't hide implementation details from me.
+
+Write maintainable Python.
+
+Use:
+
+type hints where useful
+classes with clear responsibilities
+logging
+exception handling
+meaningful names
+comments only where they add value
+
+Do not use:
+
+except:
+    pass
+
+to hide errors.
+
+Do not silently swallow network failures.
+
+38. ERROR HANDLING
+
+Make errors useful.
+
+Instead of:
+
+Connection failed
+
+show something like:
+
+Unable to connect to QA_SERVER
+
+Host: 15.206.101.4
+Port: 22
+
+Reason:
+Connection timed out.
+
+[Retry] [Edit Server]
+
+Authentication failure:
+
+Authentication failed.
+
+Check username, password, or private key.
+
+[Retry] [Edit Server]
+39. VISUAL REFERENCE
+
+I have attached a screenshot of my current Xshell 8 interface.
+
+Use it as a visual reference for the general terminal workflow, but Ghostport should be more modern and cleaner.
+
+The screenshot demonstrates the kind of SSH terminal experience I currently use:
+
+dark terminal
+session tab at the top
+connection status
+terminal output
+shell interaction
+
+Do NOT copy Xshell branding, logos, proprietary assets, or exact UI.
+
+Ghostport should have its own visual identity.
+
+40. FINAL UX GOAL
+
+The final workflow should feel like this:
+
+I open:
+
+Ghostport
+
+I see:
+
+⭐ QA_SERVER
+⭐ PROD_API
+⭐ DEV_SERVER
+⭐ NVR
+
+I double-click:
+
+QA_SERVER
+
+and immediately get:
+
+SSH: QA_SERVER
+
+I work normally:
+
+docker ps
+journalctl -u myservice -n 100
+df -h
+nvidia-smi
+
+Then I realize I need to copy a file.
+
+I right-click the SSH tab:
+
+Open SFTP
+
+SFTP opens in a separate window:
+
+LOCAL                         QA_SERVER
+──────────────────           ──────────────────
+Downloads                    /home/simtra
+Documents                    workspace
+Pictures                     logs
+                             scripts
+
+No login prompt.
+
+I open another SFTP tab:
+
+QA_SERVER × │ PROD_API × │ + 
+
+Right-click:
+
+QA_SERVER
+    ↓
+Duplicate Tab
+
+and get another QA_SERVER SFTP tab.
+
+That is the core Ghostport experience.
+
+MOST IMPORTANT REQUIREMENT
+
+Do not build a toy SSH client.
+
+The application should feel like a lightweight combination of:
+
+Xshell + Xftp + selected Bitvise-style workflow features, while remaining focused on my actual needs.
+
+The primary objective is:
+
+A fast, dark, portable Windows SSH client where saved server profiles make connecting to my 10–15 servers essentially one click, with an integrated SFTP client that can be opened from an active SSH session without asking for credentials again.
+
+Start by designing the project architecture and V1 implementation plan, then begin implementing Stage 1. Do not jump ahead to advanced features before the basic application is working.

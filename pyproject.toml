@@ -1,0 +1,33 @@
+[project]
+name = "ghostport"
+version = "3.1.0"
+description = "Portable Windows SSH + SFTP client. No administrator account required."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Ghostport" }]
+keywords = ["ssh", "sftp", "terminal", "windows", "portable"]
+dependencies = [
+    "PySide6>=6.6.0,<7",
+    "paramiko>=3.4.0,<4",
+    "pyte>=0.8.2,<0.9",
+    "wcwidth>=0.2.13",
+    "keyring>=25.0.0,<26",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7.4", "pyinstaller>=6.0"]
+
+[project.scripts]
+ghostport = "ghostport.main:main"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["ghostport*"]
