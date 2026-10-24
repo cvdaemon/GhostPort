@@ -31,38 +31,31 @@ Ghostport is a user-space replacement for Xshell + Xftp: saved server profiles, 
 
 ## Install (Windows)
 
-Redistributable (no admin):
+Download the latest build from **[Releases](https://github.com/cvdaemon/GhostPort/releases/latest)**.
 
-`dist/GhostportSetup/GhostportSetup.exe`
-
-1. Double-click **GhostportSetup.exe**
-2. Next → pick a folder (user AppData, or another drive) → Install → Finish
-3. Open Ghostport from the Desktop or Start menu shortcut
-
-Portable folder (copy as-is):
-
-`dist/Ghostport/` — run `Ghostport.exe` from that directory. Keep `_internal` and `portable.flag` next to the exe.
+- **GhostportSetup-*-windows.zip** — unzip and run `GhostportSetup.exe`. Next → pick a user folder or another drive → Install → Finish. Open Ghostport from the Desktop or Start menu shortcut. No administrator account.
+- **Ghostport-*-windows-portable.zip** — unzip and run `Ghostport.exe`. Keep `_internal` and `portable.flag` next to the exe.
 
 ## Run from source
 
-From the **repository root** (not `ghostport/`):
+Clone this repo. From the **repository root** (the folder that contains `pyproject.toml`, not the inner `ghostport` package):
 
 ```powershell
 python -m pip install -r requirements.txt
 python -m ghostport
 ```
 
-`python -m ghostport --setup` opens the same installer wizard without building an exe.
+Python 3.10+ on Windows. `python -m ghostport --setup` opens the per-user installer wizard.
 
-## Build the Windows packages
+## Build a Windows exe
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File scripts\build_windows.ps1
 ```
 
-Produces:
+PyInstaller writes a local `dist/` folder on your machine (gitignored):
 
-| Path | What it is |
+| Local path | What it is |
 | --- | --- |
 | `dist/Ghostport/Ghostport.exe` | Portable app |
 | `dist/GhostportSetup/GhostportSetup.exe` | Per-user installer |
